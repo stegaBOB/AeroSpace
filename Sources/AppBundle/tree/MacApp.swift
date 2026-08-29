@@ -315,9 +315,15 @@ final class MacApp: AbstractApp {
                 }
             }
 
+            var axWindowIds = Set<UInt32>()
             for (id, window) in axApp.threadGuarded.get(Ax.windowsAttr) ?? [] {
                 try job.checkCancellation()
+                axWindowIds.insert(id)
                 try alive.getOrRegisterAxWindow(windowId: id, window, nsApp, job)
+            }
+
+            for (id, window) in try alive.extractBackgroundNativeTabs(axWindowIds, job) {
+                dead[id] = window
             }
 
             windows.threadGuarded = alive
@@ -399,6 +405,72 @@ extension [UInt32: AxWindow] {
             return nil
         }
     }
+
+    /// Removes and returns the windows that back unselected native macOS tabs.
+    ///
+    /// Apps with native tabs (Finder, Terminal, Ghostty) keep one window per tab. Only the selected
+    /// tab stays in `kAXWindowsAttribute`, but every tab keeps a live CGWindow, so
+    /// ``AXUIElement/containingWindowId()`` still answers for the unselected ones and they linger as
+    /// windows that cannot be focused or seen. https://github.com/nikitabobko/AeroSpace/issues/345
+    ///
+    /// Absence from `axWindowIds` alone is not enough to identify them: windows on inactive macOS
+    /// Spaces are absent too. A tab is recognized by the tab bar of the selected window it hides
+    /// behind - same exact frame, and no more of them than that tab bar has tabs.
+    fileprivate mutating func extractBackgroundNativeTabs(_ axWindowIds: Set<UInt32>, _ job: RunLoopJob) throws -> [UInt32: AxWindow] {
+        // AX requests are expensive, so pay for them only once something is actually absent
+        if allSatisfy({ axWindowIds.contains($0.key) }) { return [:] }
+
+        var frames = [UInt32: Rect]()
+        for (id, window) in self {
+            try job.checkCancellation()
+            frames[id] = try getAxRect(window: window.ax, job: job)
+        }
+
+        // Only a window that something hides behind can be a tab bar worth reading
+        let absentFrames = frames.filter { !axWindowIds.contains($0.key) }.values
+        var tabCounts = [UInt32: Int]()
+        for (id, frame) in frames where axWindowIds.contains(id) && absentFrames.contains(where: { $0.isSameFrame(frame) }) {
+            try job.checkCancellation()
+            tabCounts[id] = try self[id].map { try nativeTabCount(window: $0.ax, job: job) } ?? 0
+        }
+
+        var tabs = [UInt32: AxWindow]()
+        for id in backgroundNativeTabIds(frames: frames, axWindowIds: axWindowIds, tabCounts: tabCounts) {
+            tabs[id] = removeValue(forKey: id)
+        }
+        return tabs
+    }
+}
+
+/// The number of native tabs `window` shows in its tab bar. 0 when it has none.
+private func nativeTabCount(window: AXUIElement, job: RunLoopJob) throws -> Int {
+    for child in window.get(Ax.childrenAttr) ?? [] {
+        try job.checkCancellation()
+        if child.get(Ax.roleAttr) == kAXTabGroupRole {
+            return child.get(Ax.tabsAttr)?.count ?? 0
+        }
+    }
+    return 0
+}
+
+/// The ids in `frames` that are absent from `axWindowIds` and hide behind a window that is present.
+/// See `extractBackgroundNativeTabs` for why that identifies an unselected native tab.
+///
+/// `tabCounts` maps a present window to the number of tabs in its tab bar. A window without a tab
+/// bar hides nothing, and a tab bar of n tabs accounts for exactly n - 1 hidden windows, so anything
+/// beyond that is left alone rather than guessed at.
+func backgroundNativeTabIds(frames: [UInt32: Rect], axWindowIds: Set<UInt32>, tabCounts: [UInt32: Int]) -> Set<UInt32> {
+    var tabs = Set<UInt32>()
+    for (id, frame) in frames where axWindowIds.contains(id) {
+        let hidden = (tabCounts[id] ?? 0) - 1
+        if hidden <= 0 { continue }
+        let candidates = frames
+            .filter { !axWindowIds.contains($0.key) && !tabs.contains($0.key) && $0.value.isSameFrame(frame) }
+            .keys
+            .sorted() // Any of them is equally a tab. Sort only to keep the choice reproducible
+        tabs.formUnion(candidates.prefix(hidden))
+    }
+    return tabs
 }
 
 private func getAxRect(window: AXUIElement, job: RunLoopJob) throws -> Rect? {

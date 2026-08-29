@@ -279,6 +279,15 @@ enum Ax {
         key: kAXFocusedWindowAttribute,
         getter: windowOrNil,
     )
+    static let childrenAttr = ReadableAttrImpl<[any AxUiElementMock]>(
+        key: kAXChildrenAttribute,
+        getter: { ($0 as? NSArray)?.map { castToAxUiElementMock($0 as AnyObject) } ?? [] },
+    )
+    /// The tab buttons of an `AXTabGroup`. Excludes the "new tab" button that sits in the same tab bar
+    static let tabsAttr = ReadableAttrImpl<[any AxUiElementMock]>(
+        key: kAXTabsAttribute,
+        getter: { ($0 as? NSArray)?.map { castToAxUiElementMock($0 as AnyObject) } ?? [] },
+    )
     //static let mainWindowAttr = ReadableAttrImpl<AXUIElement>(
     //    key: kAXMainWindowAttribute,
     //    getter: tryGetWindow

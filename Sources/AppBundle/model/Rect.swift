@@ -49,6 +49,12 @@ extension Rect {
 }
 
 extension Rect {
+    func isSameFrame(_ other: Rect) -> Bool {
+        topLeftX == other.topLeftX && topLeftY == other.topLeftY && width == other.width && height == other.height
+    }
+}
+
+extension Rect {
     func contains(_ point: CGPoint) -> Bool {
         minX.until(excl: maxX)?.contains(point.x) == true && minY.until(excl: maxY)?.contains(point.y) == true
     }
