@@ -110,11 +110,40 @@ extension TilingContainer {
         var point = point
         var virtualPoint = virtual.topLeftCorner
 
-        guard let delta = ((orientation == .h ? width : height) - CGFloat(children.sumOfDouble { $0.getWeight(orientation) }))
-            .div(children.count) else { return }
+        // While a tiled window is dragged, lift it out of the division so siblings reflow to fill
+        // its slot (it floats under the cursor, exempt from setAxFrame). Exclude any child whose
+        // subtree contains *only* the dragged window — otherwise a lone wrapper container (which
+        // happens with flatten normalization off, e.g. after a sibling closes) would keep the slot
+        // reserved and leave an empty gap.
+        let laidOut: [TreeNode] = {
+            guard let dragged = draggedTiledWindowId else { return children }
+            let filtered = children.filter { child in
+                let leaves = child.allLeafWindowsRecursive
+                let containsDragged = leaves.contains { $0.windowId == dragged }
+                let containsOther = leaves.contains { $0.windowId != dragged }
+                return !containsDragged || containsOther
+            }
+            return filtered.isEmpty ? children : filtered
+        }()
 
-        let lastIndex = children.indices.last
-        for (i, child) in children.enumerated() {
+        let totalDim = orientation == .h ? width : height
+        // Equal-area: size each child by how many windows it contains, so every window ends up with
+        // roughly equal area instead of the 50/25/12.5… exponential shrink of a deep binary tree.
+        if config.tilingEqualArea, laidOut.count > 1 {
+            let leafCounts = laidOut.map { CGFloat($0.allLeafWindowsRecursive.count) }
+            let totalLeaves = leafCounts.reduce(CGFloat(0), +)
+            if totalLeaves > 0 {
+                for (child, leaves) in zip(laidOut, leafCounts) {
+                    child.setWeight(orientation, totalDim * leaves / totalLeaves)
+                }
+            }
+        }
+
+        guard let delta = (totalDim - CGFloat(laidOut.sumOfDouble { $0.getWeight(orientation) }))
+            .div(laidOut.count) else { return }
+
+        let lastIndex = laidOut.indices.last
+        for (i, child) in laidOut.enumerated() {
             child.setWeight(orientation, child.getWeight(orientation) + delta)
             let rawGap = context.resolvedGaps.inner.get(orientation).toDouble()
             // Gaps. Consider 4 cases:

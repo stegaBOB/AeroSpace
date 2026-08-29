@@ -141,6 +141,8 @@ private let configParser: [String: any ParserProtocol<Config>] = [
 
     "default-root-container-layout": Parser(\.defaultRootContainerLayout, parseLayout),
     "default-root-container-orientation": Parser(\.defaultRootContainerOrientation, parseDefaultContainerOrientation),
+    "tiling-insertion": Parser(\.tilingInsertionStrategy, parseTilingInsertionStrategy),
+    "tiling-equal-area": Parser(\.tilingEqualArea, parseBool),
 
     "start-at-login": Parser(\.startAtLogin, parseBool),
     "auto-reload-config": Parser(\.autoReloadConfig, parseBool),
@@ -415,6 +417,13 @@ private func parseDefaultContainerOrientation(_ raw: OrderedJson, _ backtrace: C
     parseString(raw, backtrace).flatMap {
         DefaultContainerOrientation(rawValue: $0)
             .toResult(.init(backtrace, "Can't parse default container orientation '\($0)'"))
+    }
+}
+
+private func parseTilingInsertionStrategy(_ raw: OrderedJson, _ backtrace: ConfigBacktrace) -> ResOrConfigParseDiagnostic<TilingInsertionStrategy> {
+    parseString(raw, backtrace).flatMap {
+        TilingInsertionStrategy(rawValue: $0)
+            .toResult(.init(backtrace, "Can't parse tiling insertion strategy '\($0)'. Possible values: i3|binary-tree"))
     }
 }
 

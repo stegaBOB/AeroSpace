@@ -27,6 +27,8 @@ struct MoveNodeToMonitorCommand: Command {
                     focusFollowsWindow: args.focusFollowsWindow,
                     failIfNoop: args.failIfNoop,
                     index: index,
+                    // Directional moves place the window at a specific edge; respect that and skip dwindle
+                    respectInsertionStrategy: args.target.val.directionOrNil == nil,
                 )
             case .failure(let msg):
                 return .fail(io.err(msg))

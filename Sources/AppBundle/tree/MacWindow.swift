@@ -220,12 +220,28 @@ private func unbindAndGetBindingDataForNewWindow(_ windowId: UInt32, _ macApp: M
     }
 }
 
-// The function is private because it's unsafe. It leaves the window in unbound state
+// The function is unsafe: it leaves the window in unbound state, so the caller must bind it right away
 @MainActor
-private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, window: Window?) -> BindingData {
+func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, window: Window?) -> BindingData {
     window?.unbindFromParent() // It's important to unbind to get correct data from below
     let mruWindow = workspace.mostRecentWindowRecursive
     if let mruWindow, let tilingParent = mruWindow.parent as? TilingContainer {
+        if config.tilingInsertionStrategy == .binaryTree {
+            // Hyprland "dwindle"-like binary tree: wrap the focused window in a fresh container
+            // and place the newcomer beside it. The split orientation follows the focused
+            // window's current shape, so it's computed before mruWindow is unbound.
+            let orientation = mruWindow.dwindleSplitOrientation
+            let prevBinding = mruWindow.unbindFromParent()
+            let newParent = TilingContainer(
+                parent: prevBinding.parent,
+                adaptiveWeight: prevBinding.adaptiveWeight,
+                orientation,
+                .tiles,
+                index: prevBinding.index,
+            )
+            mruWindow.bind(to: newParent, adaptiveWeight: WEIGHT_AUTO, index: 0)
+            return BindingData(parent: newParent, adaptiveWeight: WEIGHT_AUTO, index: INDEX_BIND_LAST)
+        }
         return BindingData(
             parent: tilingParent,
             adaptiveWeight: WEIGHT_AUTO,

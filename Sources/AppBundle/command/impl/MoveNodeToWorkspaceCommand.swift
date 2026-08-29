@@ -24,12 +24,12 @@ struct MoveNodeToWorkspaceCommand: Command {
             case .direct(let name):
                 targetWorkspace = Workspace.get(byName: name.raw)
         }
-        return moveWindowToWorkspace(window, targetWorkspace, io, focusFollowsWindow: args.focusFollowsWindow, failIfNoop: args.failIfNoop)
+        return moveWindowToWorkspace(window, targetWorkspace, io, focusFollowsWindow: args.focusFollowsWindow, failIfNoop: args.failIfNoop, respectInsertionStrategy: true)
     }
 }
 
 @MainActor
-func moveWindowToWorkspace(_ window: Window, _ targetWorkspace: Workspace, _ io: CmdIo, focusFollowsWindow: Bool, failIfNoop: Bool, index: Int = INDEX_BIND_LAST) -> BinaryExitCode {
+func moveWindowToWorkspace(_ window: Window, _ targetWorkspace: Workspace, _ io: CmdIo, focusFollowsWindow: Bool, failIfNoop: Bool, index: Int = INDEX_BIND_LAST, respectInsertionStrategy: Bool = false) -> BinaryExitCode {
     if window.nodeWorkspace == targetWorkspace {
         return switch failIfNoop {
             case true: .fail
@@ -37,9 +37,15 @@ func moveWindowToWorkspace(_ window: Window, _ targetWorkspace: Workspace, _ io:
                 .succ(io.err("Window '\(window.windowId)' already belongs to workspace '\(targetWorkspace.name)'. Tip: use --fail-if-noop to exit with non-zero code"))
         }
     }
-    let targetContainer: NonLeafTreeNodeObject = window.isFloating
-        ? targetWorkspace.floatingWindowsContainer
-        : targetWorkspace.rootTilingContainer
-    window.bind(to: targetContainer, adaptiveWeight: WEIGHT_AUTO, index: index)
+    if respectInsertionStrategy, !window.isFloating, config.tilingInsertionStrategy == .binaryTree {
+        // Binary-tree mode: split the focused tile of the target workspace instead of flat-appending
+        let data = unbindAndGetBindingDataForNewTilingWindow(targetWorkspace, window: window)
+        window.bind(to: data.parent, adaptiveWeight: data.adaptiveWeight, index: data.index)
+    } else {
+        let targetContainer: NonLeafTreeNodeObject = window.isFloating
+            ? targetWorkspace.floatingWindowsContainer
+            : targetWorkspace.rootTilingContainer
+        window.bind(to: targetContainer, adaptiveWeight: WEIGHT_AUTO, index: index)
+    }
     return .from(bool: focusFollowsWindow ? window.focusWindow() : true)
 }

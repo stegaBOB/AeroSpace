@@ -34,6 +34,21 @@ default-root-container-layout = 'tiles'
 #               tall monitor (anything higher than wide) gets vertical orientation
 default-root-container-orientation = 'auto'
 
+# How a newly detected window is inserted into the tiling tree.
+# Possible values: i3|binary-tree
+#   'i3'          = append the new window as a sibling next to the focused window (default)
+#   'binary-tree' = Hyprland "dwindle"-like: split the focused window in two and place the new
+#                   window beside it. The split direction follows the focused window's shape
+#                   (wide → side by side, tall → stacked).
+#                   In this mode 'enable-normalization-opposite-orientation-for-nested-containers'
+#                   is implicitly disabled so the aspect-ratio-driven structure is preserved.
+tiling-insertion = 'i3'
+
+# Size every tiled window to roughly equal area instead of letting a deep binary tree shrink
+# windows 50/25/12.5… Useful with 'tiling-insertion = binary-tree'. Note: mouse/keyboard resize
+# is overridden while this is on, since sizes are derived from the tree.
+tiling-equal-area = false
+
 # Mouse follows focus when focused monitor changes
 # Drop it from your config, if you don't like this behavior
 # See https://nikitabobko.github.io/AeroSpace/guide#on-focus-changed-callbacks

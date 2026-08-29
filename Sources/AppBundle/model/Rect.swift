@@ -40,6 +40,15 @@ extension CGRect {
 }
 
 extension Rect {
+    /// Inverse of ``CGRect/monitorFrameNormalized()``: convert a monitor-normalized, top-left-origin
+    /// rect back to AppKit's bottom-left-origin global screen coordinates (e.g. for `NSWindow.setFrame`).
+    @MainActor
+    func toAppKitScreenCgRect() -> CGRect {
+        CGRect(x: topLeftX, y: mainMonitorInfo.height - topLeftY - height, width: width, height: height)
+    }
+}
+
+extension Rect {
     func contains(_ point: CGPoint) -> Bool {
         minX.until(excl: maxX)?.contains(point.x) == true && minY.until(excl: maxY)?.contains(point.y) == true
     }

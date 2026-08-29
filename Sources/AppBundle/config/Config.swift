@@ -41,6 +41,8 @@ struct Config: ConvenienceMutable {
     var _nonEmptyWorkspacesRootContainersLayoutOnStartup: Void = ()
     var defaultRootContainerLayout: Layout = .tiles
     var defaultRootContainerOrientation: DefaultContainerOrientation = .auto
+    var tilingInsertionStrategy: TilingInsertionStrategy = .i3
+    var tilingEqualArea: Bool = false
     var startAtLogin: Bool = false
     var autoReloadConfig: Bool = false
     var automaticallyUnhideMacosHiddenApps: Bool = false
@@ -80,4 +82,24 @@ enum ConfigVersion: Int, Comparable, CaseIterable, Sendable, CustomStringConvert
 
 enum DefaultContainerOrientation: String {
     case horizontal, vertical, auto
+}
+
+/// How a newly detected window is inserted into the tiling tree.
+enum TilingInsertionStrategy: String {
+    /// i3-like: the new window is appended as a sibling right next to the focused window.
+    case i3
+    /// Hyprland "dwindle"-like binary tree: the new window splits the focused window in two.
+    /// The split orientation follows the focused window's aspect ratio (wide → side by side,
+    /// tall → stacked).
+    case binaryTree = "binary-tree"
+}
+
+extension Config {
+    /// Opposite-orientation normalization forces nested containers to strictly alternate
+    /// h/v. That fights the aspect-ratio-driven structure that the binary-tree insertion
+    /// strategy (and drag-to-split) build, so it is implicitly disabled in binary-tree mode.
+    @MainActor
+    var shouldNormalizeOppositeOrientation: Bool {
+        enableNormalizationOppositeOrientationForNestedContainers && tilingInsertionStrategy != .binaryTree
+    }
 }

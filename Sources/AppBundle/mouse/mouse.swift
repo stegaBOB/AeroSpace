@@ -1,6 +1,9 @@
 import AppKit
 
 @MainActor var currentlyManipulatedWithMouseWindowId: UInt32? = nil
+/// Set while a *tiled* window is being dragged with the mouse. The layout lifts this window out of
+/// the tiling division (siblings reflow to fill its slot) until the drag is committed on mouse-up.
+@MainActor var draggedTiledWindowId: UInt32? = nil
 var isLeftMouseButtonDown: Bool { NSEvent.pressedMouseButtons == 1 }
 
 @MainActor

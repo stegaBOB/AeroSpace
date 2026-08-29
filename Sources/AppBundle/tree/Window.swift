@@ -67,5 +67,18 @@ extension Window {
         bind(to: workspace.floatingWindowsContainer, adaptiveWeight: WEIGHT_AUTO, index: INDEX_BIND_LAST)
     }
 
+    /// The orientation to split this window along when a new window is inserted next to it in
+    /// binary-tree (dwindle) mode: a window wider than tall splits horizontally (side by side),
+    /// a window taller than wide splits vertically (stacked).
+    @MainActor
+    var dwindleSplitOrientation: Orientation {
+        if let rect = lastAppliedLayoutPhysicalRect {
+            return rect.width >= rect.height ? .h : .v
+        }
+        // Fallback before any layout has been applied: follow the monitor's shape.
+        let monitor = nodeWorkspace?.workspaceMonitor ?? mainMonitorInfo
+        return monitor.width >= monitor.height ? .h : .v
+    }
+
     func asMacWindow() -> MacWindow { self as! MacWindow }
 }
