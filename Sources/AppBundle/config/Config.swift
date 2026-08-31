@@ -49,6 +49,9 @@ struct Config: ConvenienceMutable {
     var accordionPadding: Int = 30
     var enableNormalizationOppositeOrientationForNestedContainers: Bool = true
     var persistentWorkspaces: OrderedSet<String> = []
+    /// Display titles keyed by workspace name. Presentation only - a workspace is still addressed by
+    /// its name everywhere else, so bindings and assignments are unaffected by a title
+    var workspaceTitles: [String: String] = [:]
     var execOnWorkspaceChange: [String] = [] // todo deprecate
     var keyMapping = KeyMapping()
     var execConfig: ExecConfig = ExecConfig()

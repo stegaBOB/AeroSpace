@@ -35,7 +35,7 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
                         }
                     } label: {
                         Toggle(isOn: .constant(workspace.isFocused)) {
-                            Text(workspace.name + workspace.suffix).font(.system(.body, design: .monospaced))
+                            Text(workspace.title + workspace.suffix).font(.system(.body, design: .monospaced))
                         }
                     }
                 }

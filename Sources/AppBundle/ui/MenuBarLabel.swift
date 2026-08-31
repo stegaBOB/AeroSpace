@@ -61,7 +61,7 @@ struct MenuBarLabel: View {
                     ForEach(orderedWorkspaces, id: \.name) { item in
                         let trayItem = TrayItem(
                             type: .workspace,
-                            name: item.name,
+                            name: item.title,
                             isActive: item.isFocused,
                             hasFullscreenWindows: item.hasFullscreenWindows,
                         )
@@ -95,7 +95,7 @@ struct MenuBarLabel: View {
                 .bold()
                 .padding(.bottom, 6)
             ForEach(otherWorkspaces, id: \.name) { item in
-                itemView(for: TrayItem(type: .workspace, name: item.name, isActive: false, hasFullscreenWindows: item.hasFullscreenWindows))
+                itemView(for: TrayItem(type: .workspace, name: item.title, isActive: false, hasFullscreenWindows: item.hasFullscreenWindows))
             }
         }
         .opacity(0.6)

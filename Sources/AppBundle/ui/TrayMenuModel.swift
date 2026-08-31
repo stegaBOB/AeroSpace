@@ -30,8 +30,8 @@ enum AxPermissionStatus: Equatable {
         sortedMonitors
         .map {
             let hasFullscreenWindows = $0.activeWorkspace.allLeafWindowsRecursive.contains { $0.isFullscreen }
-            let activeWorkspaceName = hasFullscreenWindows ? "[\($0.activeWorkspace.name)]" : $0.activeWorkspace.name
-            return ($0.activeWorkspace == focus.workspace && sortedMonitors.count > 1 ? "*" : "") + activeWorkspaceName
+            let activeWorkspaceTitle = hasFullscreenWindows ? "[\($0.activeWorkspace.title)]" : $0.activeWorkspace.title
+            return ($0.activeWorkspace == focus.workspace && sortedMonitors.count > 1 ? "*" : "") + activeWorkspaceTitle
         }
         .joined(separator: " │ ")
     TrayMenuModel.shared.workspaces = Workspace.all.map {
@@ -45,6 +45,7 @@ enum AxPermissionStatus: Equatable {
         let hasFullscreenWindows = $0.allLeafWindowsRecursive.contains { $0.isFullscreen }
         return WorkspaceViewModel(
             name: $0.name,
+            title: $0.title,
             suffix: suffix,
             isFocused: focus.workspace == $0,
             isEffectivelyEmpty: $0.isEffectivelyEmpty,
@@ -56,7 +57,7 @@ enum AxPermissionStatus: Equatable {
         let hasFullscreenWindows = $0.activeWorkspace.allLeafWindowsRecursive.contains { $0.isFullscreen }
         return TrayItem(
             type: .workspace,
-            name: $0.activeWorkspace.name,
+            name: $0.activeWorkspace.title,
             isActive: $0.activeWorkspace == focus.workspace,
             hasFullscreenWindows: hasFullscreenWindows,
         )
@@ -71,7 +72,9 @@ enum AxPermissionStatus: Equatable {
 }
 
 struct WorkspaceViewModel: Hashable {
+    /// Addresses the workspace. Not shown to the user - see ``title``
     let name: String
+    let title: String
     let suffix: String
     let isFocused: Bool
     let isEffectivelyEmpty: Bool
@@ -88,6 +91,7 @@ private let validLetters = "A" ... "Z"
 
 struct TrayItem: Hashable, Identifiable {
     let type: TrayItemType
+    /// Display text: a workspace title or an uppercased mode
     let name: String
     let isActive: Bool
     let hasFullscreenWindows: Bool

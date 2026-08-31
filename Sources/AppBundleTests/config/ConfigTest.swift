@@ -733,6 +733,59 @@ final class ConfigTest: XCTestCase {
         assertEquals(colemakResult.config.keyMapping, KeyMapping(preset: .colemak, rawKeyNotationToKeyCode: [:]))
         assertEquals(colemakResult.config.keyMapping.resolve()["f"], .e)
     }
+
+    func testParseWorkspaceTitles() {
+        let result = parseConfig(
+            """
+            workspace-titles = { 1 = 'Web', code = 'Code' }
+            """,
+        )
+        assertEquals(result.errors, [])
+        assertEquals(result.config.workspaceTitles, ["1": "Web", "code": "Code"])
+    }
+
+    func testWorkspaceTitlesDefaultsToEmpty() {
+        assertEquals(parseConfig("").config.workspaceTitles, [:])
+    }
+
+    /// A key that could never name a workspace is a typo, not a title that silently never shows up
+    func testParseWorkspaceTitlesRejectsUnusableWorkspaceName() {
+        let result = parseConfig(
+            """
+            workspace-titles = { next = 'Web' }
+            """,
+        )
+        assertEquals(result.strErrors, ["[ERROR] workspace-titles.next: 'next' is a reserved workspace name"])
+    }
+
+    func testParseWorkspaceTitlesRejectsEmptyTitle() {
+        let result = parseConfig(
+            """
+            workspace-titles = { 1 = '' }
+            """,
+        )
+        assertEquals(result.strErrors, ["[ERROR] workspace-titles.1: Empty workspace title is forbidden"])
+    }
+
+    func testParseWorkspaceTitlesRejectsNonString() {
+        let result = parseConfig(
+            """
+            workspace-titles = { 1 = 42 }
+            """,
+        )
+        assertEquals(result.strErrors.count, 1)
+        assertTrue(result.strErrors.first?.starts(with: "[ERROR] workspace-titles.1:") == true)
+    }
+
+    func testParseWorkspaceTitlesRejectsNonTable() {
+        let result = parseConfig(
+            """
+            workspace-titles = 'Web'
+            """,
+        )
+        assertEquals(result.strErrors.count, 1)
+        assertTrue(result.strErrors.first?.starts(with: "[ERROR] workspace-titles:") == true)
+    }
 }
 
 extension ParseConfigResult {

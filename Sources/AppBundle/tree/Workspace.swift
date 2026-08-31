@@ -102,6 +102,10 @@ final class Workspace: TreeNode, NonLeafTreeNodeObject, Hashable, Comparable {
 }
 
 extension Workspace {
+    /// What the user sees in the UI. Falls back to ``name``, which stays the only way to address a
+    /// workspace from the config, the CLI, and callbacks
+    @MainActor
+    var title: String { config.workspaceTitles[name] ?? name }
     @MainActor
     var isVisible: Bool { visibleWorkspaceToScreenPoint.keys.contains(self) }
     @MainActor

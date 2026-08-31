@@ -149,6 +149,7 @@ private let configParser: [String: any ParserProtocol<Config>] = [
     "automatically-unhide-macos-hidden-apps": Parser(\.automaticallyUnhideMacosHiddenApps, parseBool),
     "accordion-padding": Parser(\.accordionPadding, parseInt),
     persistentWorkspacesKey: Parser(\.persistentWorkspaces, parsePersistentWorkspaces),
+    "workspace-titles": Parser(\.workspaceTitles, parseWorkspaceTitles),
     "exec-on-workspace-change": Parser(\.execOnWorkspaceChange, parseArrayOfStrings),
     "exec": Parser(\.execConfig, parseExecConfig),
 
@@ -402,6 +403,30 @@ private func parsePersistentWorkspaces(_ raw: OrderedJson, _ backtrace: ConfigBa
             let set = arr.toOrderedSet()
             return set.count == arr.count ? .success(set) : .failure(.init(backtrace, "Contains duplicated workspace names"))
         }
+}
+
+/// Titles are presentation only, but the keys still name real workspaces, so a key that could never
+/// name one is a typo worth reporting rather than a title that silently never shows up
+private func parseWorkspaceTitles(_ raw: OrderedJson, _ backtrace: ConfigBacktrace, _ c: inout ConfigParserContext) -> [String: String] {
+    guard let rawTable = raw.asDictOrNil else {
+        c.errors += [expectedActualTypeDiagnostic(expected: .table, actual: raw.tomlType, backtrace)]
+        return [:]
+    }
+    var result: [String: String] = [:]
+    for (workspaceName, rawTitle) in rawTable {
+        let keyBacktrace = backtrace + .key(workspaceName)
+        if case .failure(let msg) = WorkspaceName.parse(workspaceName) {
+            c.errors += [.init(keyBacktrace, msg)]
+            continue
+        }
+        guard let title = parseString(rawTitle, keyBacktrace).getOrNil(appendErrorTo: &c.errors) else { continue }
+        if title.isEmpty {
+            c.errors += [.init(keyBacktrace, "Empty workspace title is forbidden")]
+            continue
+        }
+        result[workspaceName] = title
+    }
+    return result
 }
 
 private func parseArrayOfStrings(_ raw: OrderedJson, _ backtrace: ConfigBacktrace) -> ResOrConfigParseDiagnostic<[String]> {
