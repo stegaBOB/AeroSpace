@@ -30,7 +30,7 @@ enum AxPermissionStatus: Equatable {
         sortedMonitors
         .map {
             let hasFullscreenWindows = $0.activeWorkspace.allLeafWindowsRecursive.contains { $0.isFullscreen }
-            let activeWorkspaceTitle = hasFullscreenWindows ? "[\($0.activeWorkspace.title)]" : $0.activeWorkspace.title
+            let activeWorkspaceTitle = hasFullscreenWindows ? "[\($0.activeWorkspace.titleWithName)]" : $0.activeWorkspace.titleWithName
             return ($0.activeWorkspace == focus.workspace && sortedMonitors.count > 1 ? "*" : "") + activeWorkspaceTitle
         }
         .joined(separator: " │ ")
@@ -45,7 +45,7 @@ enum AxPermissionStatus: Equatable {
         let hasFullscreenWindows = $0.allLeafWindowsRecursive.contains { $0.isFullscreen }
         return WorkspaceViewModel(
             name: $0.name,
-            title: $0.title,
+            title: $0.titleWithName,
             suffix: suffix,
             isFocused: focus.workspace == $0,
             isEffectivelyEmpty: $0.isEffectivelyEmpty,
@@ -57,7 +57,7 @@ enum AxPermissionStatus: Equatable {
         let hasFullscreenWindows = $0.activeWorkspace.allLeafWindowsRecursive.contains { $0.isFullscreen }
         return TrayItem(
             type: .workspace,
-            name: $0.activeWorkspace.title,
+            name: $0.activeWorkspace.titleWithName,
             isActive: $0.activeWorkspace == focus.workspace,
             hasFullscreenWindows: hasFullscreenWindows,
         )
@@ -72,8 +72,9 @@ enum AxPermissionStatus: Equatable {
 }
 
 struct WorkspaceViewModel: Hashable {
-    /// Addresses the workspace. Not shown to the user - see ``title``
+    /// Addresses the workspace. Not shown on its own - see ``title``
     let name: String
+    /// ``Workspace/titleWithName``, ready to display
     let title: String
     let suffix: String
     let isFocused: Bool

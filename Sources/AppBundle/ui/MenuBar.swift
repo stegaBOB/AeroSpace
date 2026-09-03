@@ -97,9 +97,7 @@ func renameWorkspaceMenu(viewModel: TrayMenuModel) -> some View {
             Button {
                 RenameWorkspaceModel.shared.workspaceName = workspace.name
             } label: {
-                // Show the name alongside the title, because the name is what the rename does not change
-                let label = workspace.title == workspace.name ? workspace.name : "\(workspace.name): \(workspace.title)"
-                Text(label).font(.system(.body, design: .monospaced))
+                Text(workspace.title).font(.system(.body, design: .monospaced))
             }
         }
         Divider()

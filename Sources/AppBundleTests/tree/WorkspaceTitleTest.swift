@@ -73,6 +73,34 @@ final class WorkspaceTitleTest: XCTestCase {
         assertEquals(Workspace.get(byName: "4").title, "4")
     }
 
+    func testTitleWithNameOmitsThePrefixWhenThereIsNoTitle() {
+        config.workspaceTitles = [:]
+        assertEquals(Workspace.get(byName: "3").titleWithName, "3")
+    }
+
+    func testTitleWithNamePrefixesAConfiguredTitle() {
+        config.workspaceTitles = ["3": "Code"]
+        assertEquals(Workspace.get(byName: "3").titleWithName, "3: Code")
+    }
+
+    func testTitleWithNamePrefixesARename() {
+        WorkspaceTitleStore.setTitle("Rust", ofWorkspace: "3")
+        assertEquals(Workspace.get(byName: "3").titleWithName, "3: Rust")
+    }
+
+    /// Titling a workspace with its own name must not produce "3: 3"
+    func testTitleWithNameDoesNotRepeatTheName() {
+        WorkspaceTitleStore.setTitle("3", ofWorkspace: "3")
+        assertEquals(Workspace.get(byName: "3").titleWithName, "3")
+    }
+
+    func testTitleWithNameDropsThePrefixAfterAReset() {
+        config.workspaceTitles = [:]
+        WorkspaceTitleStore.setTitle("Rust", ofWorkspace: "3")
+        WorkspaceTitleStore.setTitle(nil, ofWorkspace: "3")
+        assertEquals(Workspace.get(byName: "3").titleWithName, "3")
+    }
+
     func testResetAllDropsEveryRename() {
         config.workspaceTitles = ["4": "Chat"]
         WorkspaceTitleStore.setTitle("Rust", ofWorkspace: "3")

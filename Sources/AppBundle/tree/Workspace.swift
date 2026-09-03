@@ -108,6 +108,14 @@ extension Workspace {
     var title: String {
         WorkspaceTitleStore.title(ofWorkspace: name) ?? config.workspaceTitles[name] ?? name
     }
+    /// ``title`` with ``name`` in front, which is what the UI shows: a title says what is on the
+    /// workspace but hides the one thing every binding and command addresses it by.
+    /// Square brackets are not used as the separator - the menu bar spends those on fullscreen.
+    @MainActor
+    var titleWithName: String {
+        let title = title
+        return title == name ? name : "\(name): \(title)"
+    }
     @MainActor
     var isVisible: Bool { visibleWorkspaceToScreenPoint.keys.contains(self) }
     @MainActor

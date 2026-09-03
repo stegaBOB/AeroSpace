@@ -69,7 +69,8 @@ persistent-workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B",
                          "C", "D", "E", "F", "G", "I", "M", "N", "O", "P", "Q",
                          "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
 
-# Display titles for workspaces, shown in the menu bar and in the tray menu.
+# Display titles for workspaces, shown in the menu bar and in the tray menu as 'name: title',
+# so a renamed workspace still shows the name every binding and command addresses it by.
 # A title is presentation only. A workspace is still addressed by its name everywhere else,
 # so bindings, 'persistent-workspaces', and monitor assignment are unaffected:
 # 'alt-1' below still focuses workspace 1 no matter what title you give it.
