@@ -15,14 +15,22 @@ struct SummonWorkspaceCommand: Command {
                     .succ(io.err("Workspace '\(workspace.name)' is already visible on the focused monitor. Tip: use --fail-if-noop to exit with non-zero code"))
             }
         }
+        // Captured before the summon displaces it
+        let displaced = monitor.activeWorkspace
         let prevMonitor = workspace.isVisible ? workspace.workspaceMonitor : nil
         if monitor.setActiveWorkspace(workspace) {
             if let prevMonitor {
-                let stubWorkspace = getStubWorkspace(for: prevMonitor)
-                check(
-                    prevMonitor.setActiveWorkspace(stubWorkspace),
-                    "getStubWorkspace generated incompatible stub workspace (\(stubWorkspace)) for the monitor (\(prevMonitor)",
-                )
+                // Swap, the way Xmonad's greedyView does: the workspace this monitor gives up takes
+                // the place of the summoned one, instead of leaving that monitor on a fresh stub
+                // and this one assigned a workspace nobody can see.
+                if !prevMonitor.setActiveWorkspace(displaced) {
+                    // workspace-to-monitor-force-assignment pins the displaced workspace here
+                    let stubWorkspace = getStubWorkspace(for: prevMonitor)
+                    check(
+                        prevMonitor.setActiveWorkspace(stubWorkspace),
+                        "getStubWorkspace generated incompatible stub workspace (\(stubWorkspace)) for the monitor (\(prevMonitor)",
+                    )
+                }
             }
             return .from(bool: workspace.focusWorkspace())
         } else {
