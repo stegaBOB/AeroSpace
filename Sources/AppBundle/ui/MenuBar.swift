@@ -39,6 +39,9 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
                         }
                     }
                 }
+                // A submenu rather than an entry per row: the rows above are click to focus, and
+                // turning them into submenus would cost that
+                renameWorkspaceMenu(viewModel: viewModel)
                 Divider()
             }
             Button {
@@ -84,6 +87,28 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
                     .resizable()
                     .aspectRatio(contentMode: .fit)
         }
+    }
+}
+
+@MainActor
+func renameWorkspaceMenu(viewModel: TrayMenuModel) -> some View {
+    Menu {
+        ForEach(viewModel.workspaces, id: \.name) { workspace in
+            Button {
+                RenameWorkspaceModel.shared.workspaceName = workspace.name
+            } label: {
+                // Show the name alongside the title, because the name is what the rename does not change
+                let label = workspace.title == workspace.name ? workspace.name : "\(workspace.name): \(workspace.title)"
+                Text(label).font(.system(.body, design: .monospaced))
+            }
+        }
+        Divider()
+        Button("Reset all titles") {
+            WorkspaceTitleStore.resetAll()
+            updateTrayText()
+        }
+    } label: {
+        Text("Rename workspace")
     }
 }
 

@@ -102,10 +102,12 @@ final class Workspace: TreeNode, NonLeafTreeNodeObject, Hashable, Comparable {
 }
 
 extension Workspace {
-    /// What the user sees in the UI. Falls back to ``name``, which stays the only way to address a
-    /// workspace from the config, the CLI, and callbacks
+    /// What the user sees in the UI. A menu bar rename wins over the configured title, which wins
+    /// over ``name`` - the only way to address a workspace from the config, the CLI, and callbacks
     @MainActor
-    var title: String { config.workspaceTitles[name] ?? name }
+    var title: String {
+        WorkspaceTitleStore.title(ofWorkspace: name) ?? config.workspaceTitles[name] ?? name
+    }
     @MainActor
     var isVisible: Bool { visibleWorkspaceToScreenPoint.keys.contains(self) }
     @MainActor
