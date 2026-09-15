@@ -7,6 +7,10 @@ open class Window: TreeNode, Hashable {
     var lastFloatingSize: CGSize?
     var isFullscreen: Bool = false
     var noOuterGapsInFullscreen: Bool = false
+    /// Set when the window is pinned to an edge of its monitor at a fixed size. It then follows its
+    /// monitor's active workspace and is laid out in a reserved band rather than in the tiling
+    /// division. Orthogonal to tiling and floating, like ``isFullscreen``
+    var strip: WindowStrip? = nil
     var layoutReason: LayoutReason = .standard
 
     @MainActor
@@ -57,6 +61,7 @@ extension Window {
             case .macosMinimizedWindowsContainer: false
             case .macosPopupWindowsContainer: false
             case .tilingContainer: false
+            case .stripWindowsContainer: false
             case .unbound: false
         }
     }

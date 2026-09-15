@@ -61,6 +61,8 @@ func exitMacOsNativeUnconventionalState(
     switch prevParentKind {
         case .floatingWindowsContainer:
             window.bindAsFloatingWindow(to: workspace)
+        case .stripWindowsContainer:
+            window.bind(to: workspace.stripWindowsContainer, adaptiveWeight: WEIGHT_AUTO, index: INDEX_BIND_LAST)
         case .workspace:
             break // Not possible
         case .tilingContainer:

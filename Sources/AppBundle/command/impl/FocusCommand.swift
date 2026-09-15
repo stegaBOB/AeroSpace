@@ -209,7 +209,7 @@ extension TreeNode {
                 }
             case .macosMinimizedWindowsContainer, .macosFullscreenWindowsContainer,
                  .macosPopupWindowsContainer, .macosHiddenAppsWindowsContainer,
-                 .floatingWindowsContainer:
+                 .floatingWindowsContainer, .stripWindowsContainer:
                 die("Impossible")
         }
     }

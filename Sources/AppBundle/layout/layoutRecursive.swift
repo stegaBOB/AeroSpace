@@ -3,8 +3,21 @@ import AppKit
 extension Workspace {
     @MainActor
     func layoutWorkspace() async throws {
-        if isEffectivelyEmpty { return }
-        let rect = workspaceMonitor.visibleRectPaddedByOuterGaps
+        // A workspace holding nothing but strips still has bands to place
+        if isEffectivelyEmpty && strips.isEmpty { return }
+        let full = workspaceMonitor.visibleRectPaddedByOuterGaps
+
+        // Strips take their bands off the monitor first, so what the tree is laid out in does not
+        // depend on the tree. That is the whole point: a strip looks the same in every workspace
+        let stripWindows = strips
+        let (bands, rect) = reserveStripBands(full, stripWindows.compactMap(\.strip))
+        for (window, band) in zip(stripWindows, bands) where band.width > 0 && band.height > 0 {
+            window.lastAppliedLayoutPhysicalRect = band
+            window.lastAppliedLayoutVirtualRect = band
+            window.isFullscreen = false
+            window.setAxFrame(band.topLeftCorner, band.size)
+        }
+
         // If monitors are aligned vertically and the monitor below has smaller width, then macOS may not allow the
         // window on the upper monitor to take full width. rect.height - 1 resolves this problem
         // But I also faced this problem in monitors horizontal configuration. ¯\_(ツ)_/¯
@@ -22,6 +35,9 @@ extension TreeNode {
                 lastAppliedLayoutVirtualRect = virtual
                 try await workspace.rootTilingContainer.layoutRecursive(point, width: width, height: height, virtual: virtual, context)
                 try await workspace.floatingWindowsContainer.layoutRecursive(point, width: width, height: height, virtual: virtual, context)
+            case .stripWindowsContainer:
+                // Positioned by layoutWorkspace, which needs the monitor rect to reserve the bands
+                break
             case .floatingWindowsContainer(let container):
                 for window in container.children.filterIsInstance(of: Window.self) {
                     window.lastAppliedLayoutPhysicalRect = nil

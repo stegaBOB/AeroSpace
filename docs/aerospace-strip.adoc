@@ -1,0 +1,58 @@
+= aerospace-strip(1)
+include::util/man-attributes.adoc[]
+// tag::purpose[]
+:manpurpose: Pin a window to an edge of its monitor at a fixed size, on every workspace.
+// end::purpose[]
+:manname: aerospace-strip
+
+// =========================================================== Synopsis
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace strip [-h|--help] [--fail-if-noop] [--window-id <window-id>] [on|off]
+
+// end::synopsis[]
+
+// =========================================================== Description
+== Description
+
+// tag::body[]
+{manpurpose}
+
+The edge and the size come from the window itself, so there is nothing to configure. Size the window
+where you want it, then run the command. The edge is whichever monitor edge the window sits nearest
+to, and the size is how far the window reaches along that edge's axis.
+
+A strip keeps that band on every workspace. Switching workspace never hides it, and the other
+windows tile in what is left. Its size does not depend on how many windows a workspace holds, which
+is what makes it predictable.
+
+You may have several strips. Each takes a whole band off the edge of what remains, in the order the
+strips were made, so the tiling area is always a single rectangle. A band that could cut that area
+in two is not possible.
+
+A strip never takes the whole monitor. It is clamped so that tiling always keeps at least one point.
+
+Switching a strip off leaves the window in the workspace it is in, and it rejoins the tiling
+division. There is no record of where it was before.
+
+Strips do not survive a restart of AeroSpace.
+
+// =========================================================== Options
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+--fail-if-noop:: Exit with non-zero exit code if the window is already in the requested state.
+include::./util/window-id-flag-desc.adoc[]
+
+// =========================================================== Arguments
+include::./util/conditional-arguments-header.adoc[]
+
+on:: Turn the window into a strip
+off:: Return the window to the tiling division
+(no argument):: Toggle
+
+// end::body[]
+
+// =========================================================== Footer
+include::util/man-footer.adoc[]

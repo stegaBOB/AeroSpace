@@ -16,6 +16,8 @@ struct LayoutCommand: Command {
                         node = .floatingWindowsContainer(it)
                     case .tilingContainer(let it):
                         node = .tilingContainer(it)
+                    case .stripWindowsContainer:
+                        return .fail(io.err("Can't change layout of a strip. Run 'strip off' first"))
                     case .macosFullscreenWindowsContainer,
                          .macosHiddenAppsWindowsContainer,
                          .macosMinimizedWindowsContainer:

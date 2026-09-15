@@ -151,6 +151,9 @@ let run_callback_help_generated = """
 let split_help_generated = """
     USAGE: split [-h|--help] [--window-id <window-id>] (horizontal|vertical|opposite)
     """
+let strip_help_generated = """
+    USAGE: strip [-h|--help] [--fail-if-noop] [--window-id <window-id>] [on|off]
+    """
 let subscribe_help_generated = """
     USAGE: subscribe [-h|--help] [--all] [--no-send-initial] [<event>...]
     """
