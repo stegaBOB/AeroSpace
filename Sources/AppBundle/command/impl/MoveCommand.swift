@@ -20,6 +20,8 @@ struct MoveCommand: Command {
         }
         switch currentWindow.windowParentCases {
             case .unbound: return .fail
+            case .stripWindowsContainer:
+                return .fail(io.err("Can't move a strip. It is pinned to a monitor edge"))
             case .tilingContainer(let parent):
                 guard let indexOfCurrent = currentWindow.ownIndex else { return .fail(io.err(bugPrompt())) }
                 let indexOfSiblingTarget = indexOfCurrent + direction.focusOffset
@@ -113,7 +115,8 @@ private let moveOutMacosUnconventionalWindow = "moving macOS fullscreen, minimiz
                  .macosMinimizedWindowsContainer,
                  .macosFullscreenWindowsContainer,
                  .macosHiddenAppsWindowsContainer,
-                 .macosPopupWindowsContainer: true
+                 .macosPopupWindowsContainer,
+                 .stripWindowsContainer: true
         }
     }) as? TilingContainer
     guard let innerMostTilingContainer else { return .fail(io.err(bugPrompt())) } // Impossible

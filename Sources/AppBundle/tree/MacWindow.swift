@@ -88,7 +88,8 @@ final class MacWindow: Window {
             deadWindowWorkspace == prevFocusedWorkspace && prevFocusedWorkspaceDate.distance(to: .now) < 1
         {
             switch parent.cases {
-                case .tilingContainer, .floatingWindowsContainer, .macosHiddenAppsWindowsContainer, .macosFullscreenWindowsContainer:
+                case .tilingContainer, .floatingWindowsContainer, .stripWindowsContainer,
+                     .macosHiddenAppsWindowsContainer, .macosFullscreenWindowsContainer:
                     let deadWindowFocus = deadWindowWorkspace.toLiveFocus()
                     _ = setFocus(to: deadWindowFocus)
                     // Guard against "Apple Reminders popup" bug: https://github.com/nikitabobko/AeroSpace/issues/201
@@ -176,7 +177,8 @@ final class MacWindow: Window {
 
                 setAxFrame(CGPoint(x: newX, y: newY), nil)
             case .macosNativeFullscreenWindow, .macosNativeHiddenAppWindow, .macosNativeMinimizedWindow,
-                 .macosPopupWindow, .tiling, .rootTilingContainer, .shimContainerRelation: break
+                 .macosPopupWindow, .tiling, .rootTilingContainer, .shimContainerRelation,
+                 .stripWindow: break
         }
 
         self.prevUnhiddenProportionalPositionInsideWorkspaceRect = nil
@@ -259,8 +261,9 @@ func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, window: W
 @MainActor
 func tryOnWindowDetected(_ window: Window) async {
     switch window.windowParentCases {
-        case .tilingContainer, .floatingWindowsContainer, .macosMinimizedWindowsContainer,
-             .macosFullscreenWindowsContainer, .macosHiddenAppsWindowsContainer:
+        case .tilingContainer, .floatingWindowsContainer, .stripWindowsContainer,
+             .macosMinimizedWindowsContainer, .macosFullscreenWindowsContainer,
+             .macosHiddenAppsWindowsContainer:
             _ = await onWindowDetected(.defaultEnv, CmdIoImpl.emptyStdinIgnoringOut, window)
         case .macosPopupWindowsContainer, .unbound:
             break

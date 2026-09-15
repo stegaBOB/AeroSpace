@@ -252,6 +252,7 @@ private func toLayoutResult(w: Window) -> Result<Primitive, InterVarExpansionErr
         case .macosNativeHiddenAppWindow: .success(.string("macos_native_window_of_hidden_app"))
         case .macosNativeMinimizedWindow: .success(.string("macos_native_minimized"))
         case .macosPopupWindow: .success(.string("NULL-WINDOW-LAYOUT"))
+        case .stripWindow: .success(.string("strip"))
 
         case .rootTilingContainer: .failure(.notPossible("Not possible"))
         case .shimContainerRelation: .failure(.windowParentIllegalRelation("Window cannot have a shim container relation"))

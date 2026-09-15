@@ -24,6 +24,8 @@ func migrateStrips() {
                 // Slot and weight do not matter: a strip is laid out in its own band, and
                 // layoutTiles leaves it out of the division
                 window.bind(to: to.rootTilingContainer, adaptiveWeight: WEIGHT_AUTO, index: INDEX_BIND_LAST)
+            case .stripWindowsContainer:
+                window.bind(to: to.stripWindowsContainer, adaptiveWeight: WEIGHT_AUTO, index: INDEX_BIND_LAST)
             case .floatingWindowsContainer:
                 window.bind(to: to.floatingWindowsContainer, adaptiveWeight: WEIGHT_AUTO, index: INDEX_BIND_LAST)
             // A window macOS has taken over sits in its own container and is not ours to move

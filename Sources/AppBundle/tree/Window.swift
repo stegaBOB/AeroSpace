@@ -61,6 +61,7 @@ extension Window {
             case .macosMinimizedWindowsContainer: false
             case .macosPopupWindowsContainer: false
             case .tilingContainer: false
+            case .stripWindowsContainer: false
             case .unbound: false
         }
     }

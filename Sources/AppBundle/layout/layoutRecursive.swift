@@ -3,7 +3,8 @@ import AppKit
 extension Workspace {
     @MainActor
     func layoutWorkspace() async throws {
-        if isEffectivelyEmpty { return }
+        // A workspace holding nothing but strips still has bands to place
+        if isEffectivelyEmpty && strips.isEmpty { return }
         let full = workspaceMonitor.visibleRectPaddedByOuterGaps
 
         // Strips take their bands off the monitor first, so what the tree is laid out in does not
@@ -34,6 +35,9 @@ extension TreeNode {
                 lastAppliedLayoutVirtualRect = virtual
                 try await workspace.rootTilingContainer.layoutRecursive(point, width: width, height: height, virtual: virtual, context)
                 try await workspace.floatingWindowsContainer.layoutRecursive(point, width: width, height: height, virtual: virtual, context)
+            case .stripWindowsContainer:
+                // Positioned by layoutWorkspace, which needs the monitor rect to reserve the bands
+                break
             case .floatingWindowsContainer(let container):
                 for window in container.children.filterIsInstance(of: Window.self) {
                     window.lastAppliedLayoutPhysicalRect = nil
@@ -128,19 +132,12 @@ extension TilingContainer {
         // happens with flatten normalization off, e.g. after a sibling closes) would keep the slot
         // reserved and leave an empty gap.
         let laidOut: [TreeNode] = {
-            var filtered = children
-            // A strip owns a reserved band, so it must not also claim a share of the division
-            filtered = filtered.filter { child in
+            guard let dragged = draggedTiledWindowId else { return children }
+            let filtered = children.filter { child in
                 let leaves = child.allLeafWindowsRecursive
-                return leaves.isEmpty || leaves.contains { $0.strip == nil }
-            }
-            if let dragged = draggedTiledWindowId {
-                filtered = filtered.filter { child in
-                    let leaves = child.allLeafWindowsRecursive
-                    let containsDragged = leaves.contains { $0.windowId == dragged }
-                    let containsOther = leaves.contains { $0.windowId != dragged }
-                    return !containsDragged || containsOther
-                }
+                let containsDragged = leaves.contains { $0.windowId == dragged }
+                let containsOther = leaves.contains { $0.windowId != dragged }
+                return !containsDragged || containsOther
             }
             return filtered.isEmpty ? children : filtered
         }()

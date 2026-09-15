@@ -24,6 +24,16 @@ extension Workspace {
     }
 
     @MainActor
+    var stripWindowsContainer: StripWindowsContainer {
+        let containers = children.filterIsInstance(of: StripWindowsContainer.self)
+        return switch containers.count {
+            case 0: StripWindowsContainer(parent: self)
+            case 1: containers.singleOrNil().orDie()
+            default: dieT("Workspace must contain zero or one StripWindowsContainer")
+        }
+    }
+
+    @MainActor
     var floatingWindowsContainer: FloatingWindowsContainer {
         let containers = children.filterIsInstance(of: FloatingWindowsContainer.self)
         return switch containers.count {

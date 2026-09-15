@@ -37,7 +37,8 @@ extension Workspace {
     /// Strips of this workspace, outermost first.
     @MainActor
     var strips: [Window] {
-        allLeafWindowsRecursive
+        stripWindowsContainer.children
+            .filterIsInstance(of: Window.self)
             .filter { $0.strip != nil }
             .sorted { ($0.strip?.ordinal ?? 0) < ($1.strip?.ordinal ?? 0) }
     }

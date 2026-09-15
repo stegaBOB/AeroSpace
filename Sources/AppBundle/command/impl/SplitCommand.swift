@@ -18,6 +18,8 @@ struct SplitCommand: Command {
             case .floatingWindowsContainer:
                 // Nothing to do for floating and macOS native fullscreen windows
                 return .fail(io.err("Can't split floating windows"))
+            case .stripWindowsContainer:
+                return .fail(io.err("Can't split a strip"))
             case .tilingContainer(let parent):
                 let orientation: Orientation = switch args.arg.val {
                     case .vertical: .v

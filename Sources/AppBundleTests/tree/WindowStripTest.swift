@@ -147,7 +147,7 @@ final class WindowStripTest: XCTestCase {
         let a = Workspace.get(byName: "a")
         let b = Workspace.get(byName: "b")
         assertTrue(a.focusWorkspace())
-        let window = TestWindow.new(id: 1, parent: a.rootTilingContainer)
+        let window = TestWindow.new(id: 1, parent: a.stripWindowsContainer)
         window.strip = strip(.right, 300)
 
         assertTrue(b.focusWorkspace())
@@ -170,7 +170,7 @@ final class WindowStripTest: XCTestCase {
         let a = Workspace.get(byName: "a")
         let b = Workspace.get(byName: "b")
         assertTrue(a.focusWorkspace())
-        let stripWindow = TestWindow.new(id: 1, parent: a.rootTilingContainer)
+        let stripWindow = TestWindow.new(id: 1, parent: a.stripWindowsContainer)
         stripWindow.strip = strip(.right, 300)
         let resident = TestWindow.new(id: 2, parent: b.rootTilingContainer)
         assertEquals(resident.focusWindow(), true)
@@ -184,25 +184,94 @@ final class WindowStripTest: XCTestCase {
         let a = Workspace.get(byName: "a")
         let b = Workspace.get(byName: "b")
         assertTrue(a.focusWorkspace())
-        let window = TestWindow.new(id: 1, parent: a.rootTilingContainer)
+        let window = TestWindow.new(id: 1, parent: a.stripWindowsContainer)
         window.strip = strip(.right, 300)
 
         assertTrue(b.focusWorkspace())
         migrateStrips()
         migrateStrips()
         migrateStrips()
-        assertEquals(b.rootTilingContainer.allLeafWindowsRecursive.map(\.windowId), [1])
+        assertEquals(b.stripWindowsContainer.allLeafWindowsRecursive.map(\.windowId), [1])
+        assertTrue(b.rootTilingContainer.allLeafWindowsRecursive.isEmpty)
     }
 
     func testStripsAreOrderedByCreation() {
         let workspace = Workspace.get(byName: "a")
         assertTrue(workspace.focusWorkspace())
-        let second = TestWindow.new(id: 2, parent: workspace.rootTilingContainer)
+        let second = TestWindow.new(id: 2, parent: workspace.stripWindowsContainer)
         second.strip = strip(.top, 100, 2)
-        let first = TestWindow.new(id: 1, parent: workspace.rootTilingContainer)
+        let first = TestWindow.new(id: 1, parent: workspace.stripWindowsContainer)
         first.strip = strip(.right, 200, 1)
 
         assertEquals(workspace.strips.map(\.windowId), [1, 2])
+    }
+
+    /// The reported bug: a strip must not be part of the tiling division, or an otherwise empty
+    /// workspace stretches it across the whole monitor
+    func testStripIsOutsideTheTilingTree() async {
+        let workspace = Workspace.get(byName: "a")
+        assertTrue(workspace.focusWorkspace())
+        let window = TestWindow.new(id: 1, parent: workspace.rootTilingContainer)
+        assertEquals(window.focusWindow(), true)
+        let full = mainMonitorInfo.visibleRectPaddedByOuterGaps
+        window.lastAppliedLayoutPhysicalRect =
+            Rect(topLeftX: full.maxX - 400, topLeftY: full.topLeftY, width: 400, height: full.height)
+
+        _ = await parseCommand("strip on").cmdOrDie.run(.defaultEnv, .emptyStdin)
+
+        // It left the tiling tree, so nothing in the division can resize it
+        assertTrue(workspace.rootTilingContainer.allLeafWindowsRecursive.isEmpty)
+        assertEquals(workspace.strips.map(\.windowId), [1])
+    }
+
+    func testStripOffReturnsTheWindowToTiling() async {
+        let workspace = Workspace.get(byName: "a")
+        assertTrue(workspace.focusWorkspace())
+        let window = TestWindow.new(id: 1, parent: workspace.rootTilingContainer)
+        assertEquals(window.focusWindow(), true)
+        let full = mainMonitorInfo.visibleRectPaddedByOuterGaps
+        window.lastAppliedLayoutPhysicalRect =
+            Rect(topLeftX: full.maxX - 400, topLeftY: full.topLeftY, width: 400, height: full.height)
+
+        _ = await parseCommand("strip on").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        _ = await parseCommand("strip off").cmdOrDie.run(.defaultEnv, .emptyStdin)
+
+        assertTrue(workspace.strips.isEmpty)
+        assertEquals(workspace.rootTilingContainer.allLeafWindowsRecursive.map(\.windowId), [1])
+    }
+
+    /// A strip owns its band, so the mouse must not move or resize it
+    func testStripIsNotAMouseTarget() {
+        let workspace = Workspace.get(byName: "a")
+        assertTrue(workspace.focusWorkspace())
+        let window = TestWindow.new(id: 1, parent: workspace.stripWindowsContainer)
+        window.strip = strip(.right, 300)
+        switch window.windowParentCases {
+            case .stripWindowsContainer: break
+            default: XCTFail("A strip must live in the strip container")
+        }
+    }
+
+    /// A strip is not floating either. It is a third thing
+    func testStripIsNotFloating() {
+        let workspace = Workspace.get(byName: "a")
+        let window = TestWindow.new(id: 1, parent: workspace.stripWindowsContainer)
+        window.strip = strip(.right, 300)
+        assertTrue(!window.isFloating)
+    }
+
+    /// Dropping a dragged window can never land on a strip, because drag targets are resolved
+    /// inside the tiling tree only
+    func testDragTargetsCannotBeStrips() {
+        let workspace = Workspace.get(byName: "a")
+        assertTrue(workspace.focusWorkspace())
+        let stripWindow = TestWindow.new(id: 1, parent: workspace.stripWindowsContainer)
+        stripWindow.strip = strip(.right, 300)
+        let tiled = TestWindow.new(id: 2, parent: workspace.rootTilingContainer)
+
+        let inTree = workspace.rootTilingContainer.allLeafWindowsRecursive.map(\.windowId)
+        assertEquals(inTree, [tiled.windowId])
+        assertTrue(!inTree.contains(stripWindow.windowId))
     }
 
     func testStripStaysOnItsMonitor() {
@@ -215,7 +284,7 @@ final class WindowStripTest: XCTestCase {
         let onLeft = Workspace.get(byName: "l1")
         assertTrue(left.setActiveWorkspace(onLeft))
         assertTrue(right.setActiveWorkspace(Workspace.get(byName: "r1")))
-        let window = TestWindow.new(id: 1, parent: onLeft.rootTilingContainer)
+        let window = TestWindow.new(id: 1, parent: onLeft.stripWindowsContainer)
         window.strip = strip(.right, 300)
         assertTrue(onLeft.focusWorkspace())
 
