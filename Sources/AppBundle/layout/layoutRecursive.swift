@@ -4,7 +4,19 @@ extension Workspace {
     @MainActor
     func layoutWorkspace() async throws {
         if isEffectivelyEmpty { return }
-        let rect = workspaceMonitor.visibleRectPaddedByOuterGaps
+        let full = workspaceMonitor.visibleRectPaddedByOuterGaps
+
+        // Strips take their bands off the monitor first, so what the tree is laid out in does not
+        // depend on the tree. That is the whole point: a strip looks the same in every workspace
+        let stripWindows = strips
+        let (bands, rect) = reserveStripBands(full, stripWindows.compactMap(\.strip))
+        for (window, band) in zip(stripWindows, bands) where band.width > 0 && band.height > 0 {
+            window.lastAppliedLayoutPhysicalRect = band
+            window.lastAppliedLayoutVirtualRect = band
+            window.isFullscreen = false
+            window.setAxFrame(band.topLeftCorner, band.size)
+        }
+
         // If monitors are aligned vertically and the monitor below has smaller width, then macOS may not allow the
         // window on the upper monitor to take full width. rect.height - 1 resolves this problem
         // But I also faced this problem in monitors horizontal configuration. ¯\_(ツ)_/¯
@@ -116,12 +128,19 @@ extension TilingContainer {
         // happens with flatten normalization off, e.g. after a sibling closes) would keep the slot
         // reserved and leave an empty gap.
         let laidOut: [TreeNode] = {
-            guard let dragged = draggedTiledWindowId else { return children }
-            let filtered = children.filter { child in
+            var filtered = children
+            // A strip owns a reserved band, so it must not also claim a share of the division
+            filtered = filtered.filter { child in
                 let leaves = child.allLeafWindowsRecursive
-                let containsDragged = leaves.contains { $0.windowId == dragged }
-                let containsOther = leaves.contains { $0.windowId != dragged }
-                return !containsDragged || containsOther
+                return leaves.isEmpty || leaves.contains { $0.strip == nil }
+            }
+            if let dragged = draggedTiledWindowId {
+                filtered = filtered.filter { child in
+                    let leaves = child.allLeafWindowsRecursive
+                    let containsDragged = leaves.contains { $0.windowId == dragged }
+                    let containsOther = leaves.contains { $0.windowId != dragged }
+                    return !containsDragged || containsOther
+                }
             }
             return filtered.isEmpty ? children : filtered
         }()

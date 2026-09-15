@@ -1,9 +1,9 @@
-public struct StickyCmdArgs: CmdArgs {
+public struct StripCmdArgs: CmdArgs {
     /*conforms*/ public var commonState: CmdArgsCommonState
     public init(rawArgs: StrArrSlice) { self.commonState = .init(rawArgs) }
     public static let parser: CmdParser<Self> = .init(
-        kind: .sticky,
-        help: sticky_help_generated,
+        kind: .strip,
+        help: strip_help_generated,
         flags: [
             "--fail-if-noop": trueBoolFlag(\.failIfNoop),
             "--window-id": windowIdSubArgParser(),
@@ -15,7 +15,7 @@ public struct StickyCmdArgs: CmdArgs {
     public var failIfNoop: Bool = false
 }
 
-func parseStickyCmdArgs(_ args: StrArrSlice) -> ParsedCmd<StickyCmdArgs> {
-    parseSpecificCmdArgs(StickyCmdArgs(rawArgs: args), args)
+func parseStripCmdArgs(_ args: StrArrSlice) -> ParsedCmd<StripCmdArgs> {
+    parseSpecificCmdArgs(StripCmdArgs(rawArgs: args), args)
         .filter("--fail-if-noop requires 'on' or 'off' argument") { $0.failIfNoop.implies($0.toggle == .on || $0.toggle == .off) }
 }

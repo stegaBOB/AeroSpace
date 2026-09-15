@@ -115,7 +115,7 @@ func refreshModel_nonCancellable() async {
     } else {
         Workspace.garbageCollectUnusedWorkspaces()
         await checkOnFocusChangedCallbacks_nonCancellable()
-        migrateStickyWindows()
+        migrateStrips()
         normalizeContainers()
     }
 }

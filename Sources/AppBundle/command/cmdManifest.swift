@@ -78,8 +78,8 @@ extension CmdArgs {
                 command = SplitCommand(args: self as! SplitCmdArgs)
             case .subscribe:
                 return .failure("subscribe is not supported in the eval", EXIT_CODE_TWO)
-            case .sticky:
-                command = StickyCommand(args: self as! StickyCmdArgs)
+            case .strip:
+                command = StripCommand(args: self as! StripCmdArgs)
             case .summonWorkspace:
                 command = SummonWorkspaceCommand(args: self as! SummonWorkspaceCmdArgs)
             case .swap:
