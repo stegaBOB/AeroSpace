@@ -116,6 +116,11 @@ let move_node_to_monitor_help_generated = """
        OR: move-node-to-monitor [-h|--help] [--window-id <window-id>] [--focus-follows-window]
                                 [--fail-if-noop] [--] <monitor-pattern>...
     """
+let move_node_to_workspace_group_help_generated = """
+    USAGE: move-node-to-workspace-group [-h|--help] [--fail-if-noop]
+                                        [--focus-follows-window]
+                                        [--window-id <window-id>] [--] <group>
+    """
 let move_node_to_workspace_help_generated = """
     USAGE: move-node-to-workspace [-h|--help] [--focus-follows-window] [--wrap-around]
                                   [--stdin|--no-stdin]
@@ -177,6 +182,9 @@ let volume_help_generated = """
     """
 let workspace_back_and_forth_help_generated = """
     USAGE: workspace-back-and-forth [-h|--help]
+    """
+let workspace_group_help_generated = """
+    USAGE: workspace-group [-h|--help] [--fail-if-noop] [--] <group>
     """
 let workspace_help_generated = """
     USAGE: workspace [-h|--help] [--auto-back-and-forth] [--fail-if-noop] [--] <workspace-name>

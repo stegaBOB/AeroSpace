@@ -159,6 +159,9 @@ gaps.outer.right =      0
     alt-equal = 'resize smart +50'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#workspace
+    # On several monitors, 'workspace-group 1' switches every monitor at once instead of just one.
+    # A group holds one workspace per monitor: '1' on the leftmost, then '1:2', '1:3'.
+    # See: https://nikitabobko.github.io/AeroSpace/commands#workspace-group
     alt-1 = 'workspace 1'
     alt-2 = 'workspace 2'
     alt-3 = 'workspace 3'

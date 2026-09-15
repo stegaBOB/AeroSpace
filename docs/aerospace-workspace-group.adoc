@@ -1,0 +1,48 @@
+= aerospace-workspace-group(1)
+include::util/man-attributes.adoc[]
+// tag::purpose[]
+:manpurpose: Switch every monitor to the workspaces of a group.
+// end::purpose[]
+:manname: aerospace-workspace-group
+
+// =========================================================== Synopsis
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace workspace-group [-h|--help] [--fail-if-noop] [--] <group>
+
+// end::synopsis[]
+
+// =========================================================== Description
+== Description
+
+// tag::body[]
+{manpurpose}
+
+A group names one workspace per monitor.
+Monitors take their member by position, left to right.
+The leftmost monitor keeps the bare group name, and later monitors add a numeric suffix.
+So group `3` on three monitors means the workspaces `3`, `3:2` and `3:3`.
+
+Focus stays on the monitor you already use, so the command does not move you between monitors.
+
+On a single monitor the command is identical to the `workspace` command.
+
+The command fails and changes nothing if `workspace-to-monitor-force-assignment` pins a member to a
+monitor other than the one its position asks for.
+
+// =========================================================== Options
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+--fail-if-noop:: Exit with non-zero exit code if every monitor already shows the group.
+
+// =========================================================== Arguments
+include::./util/conditional-arguments-header.adoc[]
+
+<group>:: The group to switch to.
+
+// end::body[]
+
+// =========================================================== Footer
+include::util/man-footer.adoc[]

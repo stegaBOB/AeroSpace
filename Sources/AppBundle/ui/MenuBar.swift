@@ -31,7 +31,12 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
                 ForEach(viewModel.workspaces, id: \.name) { workspace in
                     Button {
                         Task.startUnstructured {
-                            try await runLightSession(.menuBarButton, token) { _ = Workspace.get(byName: workspace.name).focusWorkspace() }
+                            try await runLightSession(.menuBarButton, token) {
+                                // A row names a group. On one monitor a group is the workspace
+                                let args = WorkspaceGroupCmdArgs(rawArgs: [])
+                                    .copy(\.target, .initialized(.parse(workspace.name).getOrDie()))
+                                _ = await WorkspaceGroupCommand(args: args).run(.defaultEnv, .emptyStdin)
+                            }
                         }
                     } label: {
                         Toggle(isOn: .constant(workspace.isFocused)) {

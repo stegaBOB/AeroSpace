@@ -1,0 +1,45 @@
+= aerospace-move-node-to-workspace-group(1)
+include::util/man-attributes.adoc[]
+// tag::purpose[]
+:manpurpose: Move the focused window to a group, on the biggest monitor.
+// end::purpose[]
+:manname: aerospace-move-node-to-workspace-group
+
+// =========================================================== Synopsis
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace move-node-to-workspace-group [-h|--help] [--fail-if-noop]
+                                       [--focus-follows-window]
+                                       [--window-id <window-id>] [--] <group>
+
+// end::synopsis[]
+
+// =========================================================== Description
+== Description
+
+// tag::body[]
+{manpurpose}
+
+A group holds one workspace per monitor, so the command must choose one.
+It chooses the member on the monitor with the largest area.
+
+On a single monitor the command is identical to the `move-node-to-workspace` command.
+
+// =========================================================== Options
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+--fail-if-noop:: Exit with non-zero exit code if the window already belongs to the target workspace.
+--focus-follows-window:: Move focus to the window together with the window.
+include::./util/window-id-flag-desc.adoc[]
+
+// =========================================================== Arguments
+include::./util/conditional-arguments-header.adoc[]
+
+<group>:: The group to move the window to.
+
+// end::body[]
+
+// =========================================================== Footer
+include::util/man-footer.adoc[]

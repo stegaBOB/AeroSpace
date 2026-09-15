@@ -26,42 +26,25 @@ enum AxPermissionStatus: Equatable {
 @MainActor func updateTrayText() {
     let sortedMonitors = sortedMonitorInfos
     let focus = focus
-    TrayMenuModel.shared.trayText = (activeMode?.takeIf { $0 != mainModeId }?.first.map { "(\($0.uppercased())) " } ?? "") +
-        sortedMonitors
-        .map {
-            let hasFullscreenWindows = $0.activeWorkspace.allLeafWindowsRecursive.contains { $0.isFullscreen }
-            let activeWorkspaceTitle = hasFullscreenWindows ? "[\($0.activeWorkspace.titleWithName)]" : $0.activeWorkspace.titleWithName
-            return ($0.activeWorkspace == focus.workspace && sortedMonitors.count > 1 ? "*" : "") + activeWorkspaceTitle
-        }
-        .joined(separator: " │ ")
-    TrayMenuModel.shared.workspaces = Workspace.all.map {
-        let apps = $0.allLeafWindowsRecursive.map { $0.app.name?.takeIf { !$0.isEmpty } }.filterNotNil().toSet()
-        let dash = " - "
-        let suffix = switch true {
-            case !apps.isEmpty: dash + apps.sorted().joinTruncating(separator: ", ", length: 25)
-            case $0.isVisible: dash + $0.workspaceMonitor.name
-            default: ""
-        }
-        let hasFullscreenWindows = $0.allLeafWindowsRecursive.contains { $0.isFullscreen }
-        return WorkspaceViewModel(
-            name: $0.name,
-            title: $0.titleWithName,
-            suffix: suffix,
-            isFocused: focus.workspace == $0,
-            isEffectivelyEmpty: $0.isEffectivelyEmpty,
-            isVisible: $0.isVisible,
-            hasFullscreenWindows: hasFullscreenWindows,
-        )
-    }
-    var items = sortedMonitors.map {
-        let hasFullscreenWindows = $0.activeWorkspace.allLeafWindowsRecursive.contains { $0.isFullscreen }
-        return TrayItem(
-            type: .workspace,
-            name: $0.activeWorkspace.titleWithName,
-            isActive: $0.activeWorkspace == focus.workspace,
-            hasFullscreenWindows: hasFullscreenWindows,
-        )
-    }
+    let modePrefix = activeMode?.takeIf { $0 != mainModeId }?.first.map { "(\($0.uppercased())) " } ?? ""
+
+    // Several monitors showing members of one group are one thing to the user, so name it once
+    let activeGroups = sortedMonitors.map { WorkspaceGroup.groupName(ofWorkspace: $0.activeWorkspace.name) }.toSet()
+    let collapseToGroup = sortedMonitors.count > 1 && activeGroups.count == 1
+
+    TrayMenuModel.shared.trayText = modePrefix + (
+        collapseToGroup
+            ? [trayLabel(sortedMonitors.map(\.activeWorkspace), focus: focus, starIfFocused: false)]
+            : sortedMonitors.map { monitor in
+                trayLabel([monitor.activeWorkspace], focus: focus, starIfFocused: sortedMonitors.count > 1)
+            }
+    ).joined(separator: " │ ")
+
+    TrayMenuModel.shared.workspaces = trayWorkspaceViewModels(collapseToGroup: collapseToGroup, focus: focus)
+
+    var items: [TrayItem] = collapseToGroup
+        ? [trayItem(of: sortedMonitors.map(\.activeWorkspace), focus: focus)]
+        : sortedMonitors.map { trayItem(of: [$0.activeWorkspace], focus: focus) }
     let mode = activeMode?.takeIf { $0 != mainModeId }?.first.map {
         TrayItem(type: .mode, name: $0.uppercased(), isActive: true, hasFullscreenWindows: false)
     }
@@ -69,6 +52,69 @@ enum AxPermissionStatus: Equatable {
         items.insert(mode, at: 0)
     }
     TrayMenuModel.shared.trayItems = items
+}
+
+/// `workspaces` holds one entry per group when the monitors show one group each, and one entry per
+/// workspace otherwise.
+@MainActor
+private func trayWorkspaceViewModels(collapseToGroup: Bool, focus: LiveFocus) -> [WorkspaceViewModel] {
+    let grouped: [(name: String, members: [Workspace])] = collapseToGroup
+        ? WorkspaceGroup.all.map { group in
+            (group, Workspace.all.filter { WorkspaceGroup.groupName(ofWorkspace: $0.name) == group })
+        }
+        : Workspace.all.map { ($0.name, [$0]) }
+
+    return grouped.map { (name, members) in
+        let apps = members
+            .flatMap { $0.allLeafWindowsRecursive }
+            .map { $0.app.name?.takeIf { !$0.isEmpty } }
+            .filterNotNil()
+            .toSet()
+        let dash = " - "
+        let suffix = switch true {
+            case !apps.isEmpty: dash + apps.sorted().joinTruncating(separator: ", ", length: 25)
+            case members.contains(where: \.isVisible):
+                dash + (members.first { $0.isVisible }?.workspaceMonitor.name ?? "")
+            default: ""
+        }
+        // The member named after the group carries the title, so renaming workspace 3 names group 3
+        let titleSource = members.first { $0.name == name } ?? members.first
+        return WorkspaceViewModel(
+            name: name,
+            title: titleSource?.titleWithName ?? name,
+            suffix: suffix,
+            isFocused: members.contains { focus.workspace == $0 },
+            isEffectivelyEmpty: members.allSatisfy(\.isEffectivelyEmpty),
+            isVisible: members.contains(where: \.isVisible),
+            hasFullscreenWindows: members.contains { $0.allLeafWindowsRecursive.contains { $0.isFullscreen } },
+        )
+    }
+}
+
+@MainActor
+private func trayLabel(_ workspaces: [Workspace], focus: LiveFocus, starIfFocused: Bool) -> String {
+    let label = trayDisplayName(workspaces)
+    let hasFullscreenWindows = workspaces.contains { $0.allLeafWindowsRecursive.contains { $0.isFullscreen } }
+    let star = starIfFocused && workspaces.contains { $0 == focus.workspace } ? "*" : ""
+    return star + (hasFullscreenWindows ? "[\(label)]" : label)
+}
+
+@MainActor
+private func trayItem(of workspaces: [Workspace], focus: LiveFocus) -> TrayItem {
+    TrayItem(
+        type: .workspace,
+        name: trayDisplayName(workspaces),
+        isActive: workspaces.contains { $0 == focus.workspace },
+        hasFullscreenWindows: workspaces.contains { $0.allLeafWindowsRecursive.contains { $0.isFullscreen } },
+    )
+}
+
+@MainActor
+private func trayDisplayName(_ workspaces: [Workspace]) -> String {
+    guard let first = workspaces.first else { return "" }
+    let group = WorkspaceGroup.groupName(ofWorkspace: first.name)
+    // Prefer the member named after the group so a rename of it shows through
+    return (workspaces.first { $0.name == group } ?? first).titleWithName
 }
 
 struct WorkspaceViewModel: Hashable {
