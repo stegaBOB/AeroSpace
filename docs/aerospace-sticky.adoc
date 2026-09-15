@@ -1,0 +1,56 @@
+= aerospace-sticky(1)
+include::util/man-attributes.adoc[]
+// tag::purpose[]
+:manpurpose: Keep a window on its monitor whatever workspace you switch to.
+// end::purpose[]
+:manname: aerospace-sticky
+
+// =========================================================== Synopsis
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace sticky [-h|--help] [--fail-if-noop] [--window-id <window-id>] [on|off]
+
+// end::synopsis[]
+
+// =========================================================== Description
+== Description
+
+// tag::body[]
+{manpurpose}
+
+A sticky window follows the active workspace of the monitor it sits on, so switching workspace
+never hides it. It stays a normal window otherwise: it tiles with its neighbours, `focus` and
+`move` reach it, and it takes part in normalization.
+
+Sticky keeps the slot the window had, but not its size. It is sized like a newly inserted window in
+each workspace it enters, because the workspaces it moves between hold different numbers of windows.
+
+Switching sticky off leaves the window in the workspace it is in. There is no record of where it
+was before it became sticky.
+
+A floating sticky window keeps its exact size and position. Note that macOS decides which window is
+in front, and it decides by focus, so a floating sticky window goes behind a tiled window that
+overlaps it as soon as you focus that window. Sticky tiling has no such problem, because tiled
+windows do not overlap.
+
+Sticky does not survive a restart of AeroSpace.
+
+// =========================================================== Options
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+--fail-if-noop:: Exit with non-zero exit code if the window is already in the requested state.
+include::./util/window-id-flag-desc.adoc[]
+
+// =========================================================== Arguments
+include::./util/conditional-arguments-header.adoc[]
+
+on:: Make the window sticky
+off:: Stop the window from being sticky
+(no argument):: Toggle
+
+// end::body[]
+
+// =========================================================== Footer
+include::util/man-footer.adoc[]
