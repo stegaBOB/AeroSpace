@@ -15,6 +15,9 @@ let projectRoot: URL = {
 
 @MainActor
 func setUpWorkspacesForTests() {
+    resetTestMonitorInfos()
+    // A test that added monitors leaves workspaces marked visible on points that no longer exist
+    gcMonitors()
     config = defaultConfig
     configUrl = defaultConfigUrl
     config.enableNormalizationFlattenContainers = false // Make layout tests more predictable

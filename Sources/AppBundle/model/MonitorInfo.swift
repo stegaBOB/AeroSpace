@@ -86,7 +86,7 @@ extension NSScreen {
 }
 
 private let testMonitorInfoRect = Rect(topLeftX: 0, topLeftY: 0, width: 1920, height: 1080)
-private let testMonitorInfo = MonitorInfoImpl(
+private let singleTestMonitorInfo = MonitorInfoImpl(
     monitorAppKitNsScreenScreensId: 1,
     name: "Test Monitor",
     rect: testMonitorInfoRect,
@@ -94,19 +94,34 @@ private let testMonitorInfo = MonitorInfoImpl(
     isMain: true,
 )
 
+/// What ``monitorInfos`` reports under unit test. A test that exercises behaviour depending on more
+/// than one monitor replaces it, and ``resetTestMonitorInfos`` puts the single monitor back.
+nonisolated(unsafe) var testMonitorInfos: [MonitorInfo] = [singleTestMonitorInfo]
+
+func newTestMonitorInfo(id: Int, name: String, rect: Rect, isMain: Bool = false) -> MonitorInfo {
+    MonitorInfoImpl(monitorAppKitNsScreenScreensId: id, name: name, rect: rect, visibleRect: rect, isMain: isMain)
+}
+
+func resetTestMonitorInfos() {
+    unsafe testMonitorInfos = [singleTestMonitorInfo]
+}
+
 var mainMonitorInfo: MonitorInfo {
-    if isUnitTest { return testMonitorInfo }
+    if isUnitTest {
+        let monitors = unsafe testMonitorInfos
+        return monitors.first(where: \.isMain) ?? monitors.first ?? singleTestMonitorInfo
+    }
     let screens = NSScreen.screens
     // Fallback: If main screen can't be found (e.g., during display reconfiguration),
     // return screens.first or testMonitor to avoid crash
     let screen = screens.withIndex.singleOrNil(where: \.value.isMainScreen) ?? screens.first.map { (0, $0) }
-    guard let screen else { return testMonitorInfo }
+    guard let screen else { return singleTestMonitorInfo }
     return LazyMonitorInfo(monitorAppKitNsScreenScreensId: screen.index + 1, isMain: true, screen.value)
 }
 
 var monitorInfos: [MonitorInfo] {
     isUnitTest
-        ? [testMonitorInfo]
+        ? unsafe testMonitorInfos
         : NSScreen.screens.enumerated().map { $0.element.toMonitorInfo(monitorAppKitNsScreenScreensId: $0.offset + 1) }
 }
 
